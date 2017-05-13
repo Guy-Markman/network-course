@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Multicast chat with impersonation prevention."""
+## @package multicast_chat.__main__
+# Multicast chat with impersonation prevention.
+#
 
 import argparse
 import logging
@@ -18,35 +20,52 @@ from . import base
 from . import packets
 
 
+## Package name.
 PACKAGE_NAME = 'multicast_chat'
+## Package version.
 PACKAGE_VERSION = '0.0.0'
 
 
+## Escape key.
 CHAR_ESCAPE = chr(27)
-# Two options for *NIX/Windows
+
+## Backspace key.
+# Two options for *NIX/Windows.
 CHARS_BACKSPACE = ('\b', chr(127))
 
-#
-# Time to wait for packet.
-#
+## Time to wait for packet."""
 GCAP_TIMEOUT = 100
 
 
+## Exit exception.
+#
+# Thrown when user choses to exit.
+#
 class ExitException(Exception):
+    """Exit exception.
+
+    Thrown when user chooses to exit."""
     pass
 
 
+## Name repository.
+#
+# Manages impersonation prevention based on mac address.
+#
 class NameRepository(base.Base):
-    """Name repository.
+    ## Timeout in seconds for house keeping.
+    _HOUSE_KEEPING_INTERVAL = 5
+    ## Name time to live interval in seconds.
+    _NAME_TTL = 60
 
-    Manages impersonation prevention based on mac address.
-    """
-
-    HOUSE_KEEPING_INTERVAL = 5  # In seconds
-    NAME_TTL = 60  # In seconds
-
+    ## Last house keeping time.
     _last_housekeeping_time = 0
 
+    ## Get a display name for MAC address.
+    # @param name (str) name.
+    # @param mac (bytes) MAC address
+    # @returns (str) display name
+    #
     @staticmethod
     def _get_display_for_name(name, mac):
         return "'%s'@%s" % (
@@ -54,25 +73,23 @@ class NameRepository(base.Base):
             packets.EthernetPacket.mac_to_string(mac),
         )
 
+    ## Constructor.
     def __init__(self):
-        """Constructor."""
         super(NameRepository, self).__init__()
         self._registration_repo = {}
 
+    ## Register/refresh a name.
+    # @arg name (str) name.
+    # @arg mac (bytes) MAC address.
+    #
+    # Will be applied only if mac matches or name is not registered.
+    #
     def register_name(
         self,
         name,
         mac,
         should_expire=True,
     ):
-        """Register/refresh a name.
-
-        Will be applied only if mac matches or name is not registered.
-
-        Args:
-            name (string): name.
-            mac (bytearray): mac address.
-        """
         entry = self._registration_repo.get(name)
 
         do_register = False
@@ -109,24 +126,21 @@ class NameRepository(base.Base):
                     'name': name,
                     'mac': mac,
                     'expire': (
-                        time.time() + self.NAME_TTL if should_expire
+                        time.time() + self._NAME_TTL if should_expire
                         else None
                     ),
                 }
 
+    ## Unregister a name.
+    # @param name (string) name.
+    # @param mac (bytearray) mac address.
+    # Will be applied only if mac matches.
+    #
     def unregister_name(
         self,
         name,
         mac,
     ):
-        """Unregister a name.
-
-        Will be applied only if mac matches.
-
-        Args:
-            name (string): name.
-            mac (bytearray): mac address.
-        """
         entry = self._registration_repo.get(name)
         if entry is None:
             self.logger.debug(
@@ -146,22 +160,20 @@ class NameRepository(base.Base):
             )
             del self._registration_repo[name]
 
+    ## Returns True if name can by used by mac.
+    #
+    # @param name (str) subject.
+    # @param mac (bytearray) mac addres.
+    # @returns (bool) True if approved.
+    #
     def is_name_valid(self, name, mac):
-        """Returns True if name can by used by mac.
-
-        Args:
-            name (str): subject.
-            mac (bytearray): mac addres.
-
-        Returns:
-            bool: True if approved.
-        """
         return self._registration_repo.get(name, {}).get('mac') == mac
 
+    ## Perform housekeeping tasks.
+    #
     def housekeeping(self):
-        """Perform housekeeping tasks."""
         now = time.time()
-        if self._last_housekeeping_time < now - self.HOUSE_KEEPING_INTERVAL:
+        if self._last_housekeeping_time < now - self._HOUSE_KEEPING_INTERVAL:
             self._last_housekeeping_time = now
 
             self.logger.debug('Housekeeping')
@@ -184,21 +196,32 @@ class NameRepository(base.Base):
                 del self._registration_repo[name]
 
 
+## Layer abstract base implementation.
+# A base class for all layers.
+#
 class Layer(base.Base):
-    """Layer abstract base implementation.
-    A base class for all layers.
-    """
+    ## Operation mode
+    (
+        MODE_NORMAL,
+        MODE_STOPPING,
+    ) = range(2)
 
-    MODE_NORMAL = 0
-    MODE_STOPPING = 1
+    ## Operation mode mapping
     MODE_STR = {
         MODE_NORMAL: 'Normal',
         MODE_STOPPING: 'Stopping',
     }
 
+    ## Data element.
     class QueuedData(base.Base):
-        """Data element."""
 
+        ## Constructor.
+        # @param protocol (object) protocol selection.
+        # @param dst (object) destination address.
+        # @param src (object) source address.
+        # @param data (bytearray) payload.
+        # @param display (str) eye catcher.
+        #
         def __init__(
             self,
             protocol=None,
@@ -207,14 +230,6 @@ class Layer(base.Base):
             data=None,
             display='QueuedData',
         ):
-            """Constructor.
-
-            Args:
-                protocol (object): protocol selection.
-                dst (object): destination address.
-                src (object): source address.
-                data (bytearray): payload.
-            """
             super(Layer.QueuedData, self).__init__()
             self.protocol = protocol
             self.dst = dst
@@ -222,34 +237,37 @@ class Layer(base.Base):
             self.data = data
             self.display = display
 
+        ## String representation.
         def __repr__(self):
             return Layer.string_to_printable(self.display)
 
+    ## Operation mode.
     _mode = MODE_NORMAL
 
+    ## Retrive lower layer.
     @property
     def lower_layer(self):
         return self._lower_layer
 
+    ## Retrive address of layer.
     @property
     def address(self):
         return self._address
 
+    ## Retrive operation mode.
     @property
     def mode(self):
         return self._mode
 
+    ## Constructor.
+    # @param lower_layer (Layer) lower layer to register into.
+    # @param address (optional, object) address of this layer.
+    #
     def __init__(
         self,
         lower_layer,
         address=None,
     ):
-        """Constructor.
-
-        Args:
-            lower_layer (Layer): lower layer to register into.
-            address (optional, object): address of this layer.
-        """
         super(Layer, self).__init__()
         self._lower_layer = lower_layer
         self._address = address
@@ -265,29 +283,32 @@ class Layer(base.Base):
             self.address_to_string(address),
         )
 
+    ## String representation.
     def __repr__(self):
-        """Representation"""
         return 'Abstract Layer'
 
+    ## Resolve address to string.
+    # @param address (bytes) string representation.
+    # @returns (str) string representation.
+    #
     @staticmethod
     def address_to_string(address):
-        """Resolve address to string"""
         return address
 
+    ## Return printable chars only.
+    # @param s (string) printable string.
+    #
     @staticmethod
     def string_to_printable(s):
-        """Return printable chars only"""
         return ''.join(x for x in s.__repr__() if x in string.printable)
 
+    ## Register protocol within this layer.
+    # @param protocol (object) requested protocol.
+    #
+    # Used to filter out unneeded data, so data won't be queueued
+    # if nobody will ever deque them.
+    #
     def register_protocol(self, protocol):
-        """Register protocol within this layer.
-
-        Used to filter out unneeded data, so data won't be queueued
-        if nobody will ever deque them.
-
-        Args:
-            protocol (object): requested protocol.
-        """
         self.logger.debug(
             "Layer '%s' registering protocol '%s'",
             self,
@@ -295,12 +316,10 @@ class Layer(base.Base):
         )
         self._protocols.add(protocol)
 
+    ## Unegister protocol within this layer.
+    # @param protocol (object) requested protocol.
+    #
     def unregister_protocol(self, protocol):
-        """Unegister protocol within this layer.
-
-        Args:
-            protocol (object): requested protocol.
-        """
         self.logger.debug(
             "Layer '%s' unregistering protocol '%s'",
             self,
@@ -312,12 +331,10 @@ class Layer(base.Base):
         while self.receive(protocol=protocol):
             pass
 
+    ## Change operation mode.
+    # @param mode (int) operation mode.
+    #
     def change_mode(self, mode):
-        """Change operation mode.
-
-        Args:
-            mode (int): operation mode.
-        """
         self.logger.debug(
             "Layer '%s' change mode '%s'",
             self,
@@ -325,15 +342,16 @@ class Layer(base.Base):
         )
         self._mode = mode
 
+    ## Check if this layer has some work to do.
+    # @returns (bool) True if has work.
+    #
     def has_work(self):
         return len(self._send_queue) > 0 or len(self._receive_queue) > 0
 
+    ## Send data to this layer.
+    # @param queued_data (@ref QueuedData): data to send.
+    #
     def send(self, queued_data):
-        """Send data to this layer.
-
-        Args:
-            queued_data (self.QueuedData): data to send.
-        """
         self.logger.debug(
             "Layer '%s' send '%s'",
             self,
@@ -341,15 +359,11 @@ class Layer(base.Base):
         )
         self._send_queue.append(queued_data)
 
+    ## Receive data from this layer.
+    # @param protocol (object) requested protocol.
+    # @returns (@ref QueuedData) data or None.
+    #
     def receive(self, protocol=None):
-        """Receive data from this layer.
-
-        Args:
-            protocol (object): requested protocol.
-
-        Returns:
-            self.QueuedData: data or None.
-        """
         for i in range(len(self._receive_queue)):
             if self._receive_queue[i].protocol == protocol:
                 queued_data = self._receive_queue.pop(i)
@@ -360,15 +374,13 @@ class Layer(base.Base):
                 )
                 return queued_data
 
+    ## Queue data to be recieved by upper layer.
+    # @param queued_data (@ref QueuedData) data to queue.
+    #
+    # Data will be returned to upper layer when it
+    # calls recieve().
+    #
     def queue_receive(self, queued_data):
-        """Queue data to be recieved by upper layer.
-
-        Data will be returned to upper layer when it
-        calls recieve().
-
-        Args:
-            queued_data (QueuedData): data to queue.
-        """
         if (
             queued_data.protocol is None or
             queued_data.protocol in self._protocols
@@ -380,12 +392,12 @@ class Layer(base.Base):
             )
             self._receive_queue.append(queued_data)
 
+    ## "Dequeue data sent by upper layer.
+    #
+    # Returns data that was sent to this layer by upper layer
+    # using send().
+    #
     def dequeue_send(self):
-        """Dequeue data sent by upper layer.
-
-        Returns data that was sent to this layer by upper layer
-        using send().
-        """
         if self._send_queue:
             queued_data = self._send_queue.pop(0)
             self.logger.debug(
@@ -397,34 +409,34 @@ class Layer(base.Base):
         else:
             return None
 
+    ## Layer logic.
     def process(self):
-        """Process cycle."""
         pass
 
 
+## Physical layer implementation.
+#
+# Uses gcap to receive/send packets.
+#
 class PhysicalLayer(Layer):
-    """Physical layer implementation.
 
-    Uses gcap to receive/send packets.
-    """
-
+    ## Constructor.
+    # cap (Cap) reference to gcap instance.
+    #
     def __init__(
         self,
         cap,
     ):
-        """Constructor.
-
-        Args:
-            cap (GCap): reference to gcap instance.
-        """
         super(PhysicalLayer, self).__init__(
             lower_layer=None,
         )
         self._cap = cap
 
+    ## @copydoc Layer#__repr__
     def __repr__(self):
         return 'Pysical Layer'
 
+    ## @copydoc Layer#process
     def process(self):
         super(PhysicalLayer, self).process()
 
@@ -444,35 +456,39 @@ class PhysicalLayer(Layer):
                 )
 
 
+## Ethernet II layer.
+#
 class EthernetLayer(Layer):
-    """Ethernet II layer."""
 
+    ## Constructor.
+    # @param lower_layer (@ref Layer) lower layer to interact with.
+    # @param address (bytearray) local mac address.
+    # @param local_loopback_mode (bool) debug only mode process own packets.
+    #
     def __init__(
         self,
         lower_layer,
         address,
         local_loopback_mode,
     ):
-        """Constructor.
-
-        Args:
-            lower_layer (Layer): lower layer to interact with.
-            address (bytearray): local mac address.
-            local_loopback_mode (bool): debug only mode process own packets.
-        """
         super(EthernetLayer, self).__init__(
             lower_layer=lower_layer,
             address=address,
         )
         self._local_loopback_mode = local_loopback_mode
 
+    ## @copydoc Layer#__repr__
     def __repr__(self):
         return 'Ethernet Layer'
 
+    ## Map address to a string.
+    # @param address (bytes) address.
+    # @returns (str) string representation.
     @staticmethod
     def address_to_string(address):
         return packets.EthernetPacket.mac_to_string(address)
 
+    ## @copydoc Layer#process
     def process(self):
         super(EthernetLayer, self).process()
 
@@ -510,19 +526,19 @@ class EthernetLayer(Layer):
             )
 
 
+## Registration layer.
 class RegistrationLayer(Layer):
-    """Registration layer."""
 
-    ANNOUNCE_INTERVAL = 2
+    ## Name announce interval.
+    _ANNOUNCE_INTERVAL = 2
 
+    ## Last time announced.
     _last_announce_time = 0
 
+    ## Announce registration status.
+    # @param command (int) command to send.
+    #
     def _announce(self, command):
-        """Announce registration status.
-
-        Args:
-            command (int): command to send.
-        """
         packet = packets.RegistrationPacket(
             command=command,
             name=self._local_name,
@@ -536,19 +552,18 @@ class RegistrationLayer(Layer):
             )
         )
 
+    ## Constructor.
+    # @param lower_layer (@ref Layer) lower layer to interact with.
+    # @param name_repository (@ref NameRepository) name repository
+    #   to interact with.
+    # @param local_name (str) local name to announce.
+    #
     def __init__(
         self,
         lower_layer,
         name_repository,
         local_name,
     ):
-        """Constructor.
-
-        Args:
-            lower_layer (Layer): lower layer to interact with.
-            name_repository (NameRepository): name repository to interact with.
-            local_name (str): local name to announce.
-        """
         super(RegistrationLayer, self).__init__(
             lower_layer=lower_layer,
         )
@@ -570,6 +585,7 @@ class RegistrationLayer(Layer):
             should_expire=False,
         )
 
+    ## Destructor.
     def __del__(self):
         self._name_repository.unregister_name(
             name=self._local_name,
@@ -579,9 +595,11 @@ class RegistrationLayer(Layer):
             protocol=packets.RegistrationPacket.ETHERTYPE,
         )
 
+    ## @copydoc Layer#__repr__
     def __repr__(self):
         return 'Registration Layer'
 
+    ## @copydoc Layer#process
     def process(self):
         super(RegistrationLayer, self).process()
 
@@ -604,12 +622,13 @@ class RegistrationLayer(Layer):
                 )
 
         now = time.time()
-        if self._last_announce_time < now - self.ANNOUNCE_INTERVAL:
+        if self._last_announce_time < now - self._ANNOUNCE_INTERVAL:
             self._last_announce_time = now
             self._announce(
                 command=packets.RegistrationPacket.COMMAND_ALLOCATE,
             )
 
+    ## Modify operation mode.
     def change_mode(self, mode):
         super(RegistrationLayer, self).change_mode(mode)
 
@@ -619,20 +638,21 @@ class RegistrationLayer(Layer):
             )
 
 
+## Chat layer.
 class ChatLayer(Layer):
-    """Chat layer."""
 
+    ## Prompt for edit mode.
     PROMPT_EDIT = '>'
+    ## Prompt for standard mode.
     PROMPT_STANDARD = ':'
 
+    ## Current edited message.
     _current_message = ''
 
+    ## Send a string to higher layer.
+    # @param s (str) string.
+    #
     def _send_string(self, s):
-        """Send a string to higher layer.
-
-        Args:
-            s (str): string.
-        """
         self.queue_receive(
             queued_data=self.QueuedData(
                 data=s.encode('utf-8'),
@@ -640,6 +660,15 @@ class ChatLayer(Layer):
             ),
         )
 
+    ## Send a chat line.
+    # @param name (str) chatter's name.
+    # @param message (str) message.
+    # @param prompt (optional, str) prompt to use before message.
+    # @param valid (optional, bool) is chatter's name valid.
+    # @param permanent (optional, bool) print new line at end of line.
+    #
+    # Erase current line, write name and message, with optional markers.
+    #
     def _send_chat_line(
         self,
         name,
@@ -648,17 +677,6 @@ class ChatLayer(Layer):
         valid=True,
         permanent=False,
     ):
-        """Send a chat line.
-
-        Erase current line, write name and message, with optional markers.
-
-        Args:
-            name (str): chatter's name.
-            message (str): message.
-            prompt (optional, str): prompt to use before message.
-            valid (optional, bool): is chatter's name valid.
-            permanent (optional, bool): print new line at end of line.
-        """
         inner = '{name:14}{valid}{prompt} {message}'.format(
             name=name,
             message=message,
@@ -678,17 +696,24 @@ class ChatLayer(Layer):
         if permanent:
             self.logger.info('Message: %s', inner)
 
+    ## Refresh current prompt.
+    #
+    # Prints local chatter's line, handy when previous was overwritten.
+    #
     def _refresh_prompt(self):
-        """Refresh current prompt.
-
-        Prints local chatter's line, handy when previous was overwritten.
-        """
         self._send_chat_line(
             name=self._local_name,
             message=self._current_message,
             prompt=self.PROMPT_EDIT,
         )
 
+    ## Constructor.
+    # @param lower_layer (@ref Layer) lower layer to interact with.
+    # @param mac_multicast (bytearray) mac to use as destination.
+    # @param name_repository (@ref NameRepository) name repository to
+    #   interact with.
+    # @param local_name (str) local name to announce.
+    #
     def __init__(
         self,
         lower_layer,
@@ -696,14 +721,6 @@ class ChatLayer(Layer):
         name_repository,
         local_name,
     ):
-        """Constructor.
-
-        Args:
-            lower_layer (Layer): lower layer to interact with.
-            mac_multicast (bytearray): mac to use as destination.
-            name_repository (NameRepository): name repository to interact with.
-            local_name (str): local name to announce.
-        """
         super(ChatLayer, self).__init__(
             lower_layer=lower_layer,
         )
@@ -716,14 +733,17 @@ class ChatLayer(Layer):
         )
         self._refresh_prompt()
 
+    ## Destructor.
     def __del__(self):
         self.lower_layer.unregister_protocol(
             protocol=packets.ChatPacket.ETHERTYPE,
         )
 
+    ## @copydoc Layer#__repr__
     def __repr__(self):
         return 'Chat Layer'
 
+    ## @copydoc Layer#process
     def process(self):
         super(ChatLayer, self).process()
 
@@ -780,6 +800,9 @@ class ChatLayer(Layer):
                     self._send_string(c)
                     self._current_message += c
 
+    ## Change operation mode.
+    # @param mode (int) new operation mode.
+    #
     def change_mode(self, mode):
         super(ChatLayer, self).change_mode(mode)
 
@@ -787,34 +810,34 @@ class ChatLayer(Layer):
             self._send_string('\r\n')
 
 
+## Terminal layer.
+#
+# Interacts with terminal.
+#
 class TerminalLayer(Layer):
-    """Terminal layer.
 
-    Interacts with terminal.
-    """
-
+    ## Constructor.
+    # @param lower_layer (@ref Layer) lower layer to interact with.
+    # @param input_char (gutil.Char) Char instance to interact with.
+    # @param output_stream (file) stream to send output to.
+    #
     def __init__(
         self,
         lower_layer,
         input_char,
         output_stream,
     ):
-        """Constructor.
-
-        Args:
-            lower_layer (Layer): lower layer to interact with.
-            input_char (gutil.Char): Char instance ot interact with.
-            output_stream (file): stream to send output to.
-        """
         super(TerminalLayer, self).__init__(
             lower_layer=lower_layer,
         )
         self._input_char = input_char
         self._output_stream = output_stream
 
+    ## @copydoc Layer#__repr__
     def __repr__(self):
         return 'Terminal Layer'
 
+    ## @copydoc Layer#process
     def process(self):
         super(TerminalLayer, self).process()
 
@@ -841,8 +864,10 @@ class TerminalLayer(Layer):
             )
 
 
+## Parse program argument.
+# @returns (dict) program arguments.
+#
 def parse_args():
-    """Parse program argument."""
 
     LOG_STR_LEVELS = {
         'DEBUG': logging.DEBUG,
@@ -929,8 +954,8 @@ def parse_args():
     return args
 
 
+## Main implementation.
 def main():
-    """Main implementation."""
 
     args = parse_args()
 

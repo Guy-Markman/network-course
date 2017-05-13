@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
-"""Base module"""
+## @package multicast_chat.base Base module.
+#
 
 
 import logging
 
 
+## Base of all objects.
+#
 class Base(object):
-    """Base of all objects"""
 
+    ## Log prefix to use.
     LOG_PREFIX = 'my'
 
+    ## Logger.
     @property
     def logger(self):
-        """Logger."""
         return self._logger
 
+    ## Contructor.
     def __init__(self):
-        """Contructor."""
         self._logger = logging.getLogger(
             '%s.%s' % (
                 self.LOG_PREFIX,
@@ -25,6 +28,9 @@ class Base(object):
         )
 
 
+## Setup logging system.
+# @returns (logger) program logger.
+#
 def setup_logging(stream=None, level=logging.INFO):
     logger = logging.getLogger(Base.LOG_PREFIX)
     logger.propagate = False

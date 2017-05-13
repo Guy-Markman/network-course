@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for packets."""
+## @package multicast_chat.test_packets Unit tests for packets.
+#
 
 import unittest
 
@@ -7,12 +8,16 @@ import unittest
 from . import packets
 
 
+## Ethernet packet test."""
+#
 class EthernetPacketTest(unittest.TestCase):
 
     TEST_MAC_DST_STRING = '12:34:56:12:12:13'
+
     TEST_MAC_DST = packets.EthernetPacket.mac_from_string(
         TEST_MAC_DST_STRING,
     )
+
     TEST_MAC_SRC = packets.EthernetPacket.mac_from_string(
         '12:34:56:12:12:12',
     )
@@ -28,10 +33,10 @@ class EthernetPacketTest(unittest.TestCase):
                 data=self.TEST_ETH_DATA,
             ).encode(),
             bytearray((
-                    0x12, 0x34, 0x56, 0x12, 0x12, 0x13,  # dst
-                    0x12, 0x34, 0x56, 0x12, 0x12, 0x12,  # src
-                    0x12, 0x34,  # type
-                    0x01, 0x02, 0x03, 0x04  # data
+                0x12, 0x34, 0x56, 0x12, 0x12, 0x13,     # dst
+                0x12, 0x34, 0x56, 0x12, 0x12, 0x12,     # src
+                0x12, 0x34,                             # type
+                0x01, 0x02, 0x03, 0x04                  # data
             )),
         )
 
@@ -164,7 +169,7 @@ class EthernetPacketTest(unittest.TestCase):
             packets.EthernetPacket(
                 dst=self.TEST_MAC_DST,
                 src=self.TEST_MAC_SRC,
-                ethertype=self.TEST_ETH_TYPE+1,
+                ethertype=self.TEST_ETH_TYPE + 1,
                 data=self.TEST_ETH_DATA,
             ),
         )
@@ -209,8 +214,11 @@ class EthernetPacketTest(unittest.TestCase):
         )
 
 
+## Test registration packet.
+#
 class RegistrationPacketTest(unittest.TestCase):
 
+    ## Test name.
     TEST_NAME = 'name1'
 
     def test_encode(self):
@@ -304,7 +312,7 @@ class RegistrationPacketTest(unittest.TestCase):
                 command=(
                     packets.RegistrationPacket.COMMAND_ALLOCATE
                 ),
-                name=self.TEST_NAME+'a',
+                name=self.TEST_NAME + 'a',
             ),
         )
 
@@ -320,6 +328,8 @@ class RegistrationPacketTest(unittest.TestCase):
         )
 
 
+## Chat packet test.
+#
 class ChatPacketTest(unittest.TestCase):
 
     TEST_NAME = 'name1'

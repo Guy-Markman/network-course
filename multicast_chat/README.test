@@ -39,8 +39,8 @@ $ PYTHONPATH=[location of my_multicast_chat parent];[location of network-course]
 FORMAT CHECK EXECUTION
 ----------------------
 
-> python -m pyflakes *.py
-> python -m pep8 *.py
+> python -m pyflakes .
+> python -m pep8 --ignore=E266,E262 .
 
-$ pyflakes *.py
-$ pep8 *.py
+$ pyflakes .
+$ pep8 --ignore=E266,E262 .

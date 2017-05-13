@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Packets encoding/decoding."""
+## @package multicast_chat.packets Packets encoding/decoding.
+#
 
 
 import re
@@ -8,170 +9,142 @@ import re
 from . import base
 
 
+## Utilities for encoding/decoding.
+#
 class EncodeDecodeUtils(object):
-    """Utilities for encoding/decoding."""
 
+    ## Decode octet string at n length.
+    # @param buf (bytearray) buffer to decode.
+    # @param n (int) number of octets.
+    # @returns (tuple) first is parsed entry second is remaining.
+    #
     @staticmethod
     def decode_binary(buf, n):
-        """Decode octet string at n length.
-
-        Args:
-            buf (bytearray): buffer to decode.
-            n (int): number of octets.
-
-        Returns:
-            tuple: first is parsed entry second is remaining.
-        """
         return buf[:n], buf[n:]
 
+    ## Decode ascii string at n length.
+    # @param buf (bytearray) buffer to decode.
+    # @param n (int) number of octets.
+    # @param encoding (string, optional) text encoding.
+    # @returns (tuple) first is parsed entry second is remaining.
+    #
     @staticmethod
     def decode_string(buf, n, encoding='ascii'):
-        """Decode ascii string at n length.
-
-        Args:
-            buf (bytearray): buffer to decode.
-            n (int): number of octets.
-
-        Returns:
-            tuple: first is parsed entry second is remaining.
-        """
         return buf[:n].decode(encoding), buf[n:]
 
+    ## Decode integer at n length big endian.
+    # @param buf (bytearray) buffer to decode.
+    # @param n (int) number of octets.
+    # @returns (tuple) first is parsed entry second is remaining.
+    #
     @staticmethod
     def decode_integer(buf, n):
-        """Decode integer at n length big endian.
-
-        Args:
-            buf (bytearray): buffer to decode.
-            n (int): number of octets.
-
-        Returns:
-            tuple: first is parsed entry second is remaining.
-        """
         ret = 0
         for x in buf[:n]:
             ret = (ret << 8) + x
         return ret, buf[n:]
 
+    ## Decode binary as hex string.
+    # @param buf (bytearray) buffer to decode.
+    # @param n (int) number of octets.
+    # @param sep (optional, str) octet separator.
+    # @returns (tuple) first is parsed entry second is remaining.
+    #
     @staticmethod
     def decode_binary_as_hexstring(buf, n, sep=''):
-        """Decode binary as hex string.
-
-        Args:
-            buf (bytearray): buffer to decode.
-            n (int): number of octets.
-            sep (optional, str): octet separator.
-
-        Returns:
-            tuple: first is parsed entry second is remaining.
-        """
         return sep.join('%02x' % x for x in buf[:n]), buf[n:]
 
+    ## Encode binary.
+    # @param x (bytearray) data to encode.
+    # @param n (int) length to encode.
+    # @returns (bytearray) data.
+    #
     @staticmethod
     def encode_binary(x, n):
-        """Encode binary.
-
-        Args:
-            x (bytearray): data to encode.
-
-        Returns:
-            bytearray: data.
-        """
         return x[:n]
 
+    ## Encode ascii string.
+    # @param s (str) data to encode.
+    # @returns (bytearray) data.
+    #
     @staticmethod
     def encode_string(s):
-        """Encode ascii string.
-
-        Args:
-            s (str): data to encode.
-
-        Returns:
-            bytearray: data.
-        """
         return s.encode('ascii')
 
+    ## Encode big endian integer.
+    # @param i (int) integer to encode.
+    # @param n (int) octet length.
+    # @returns (bytearray) data.
+    #
     @staticmethod
     def encode_integer(i, n):
-        """Encode big endian integer.
-
-        Args:
-            i (int): integer to encode.
-            n (int): octet length.
-
-        Returns:
-            bytearray: data.
-        """
         l = []
         for x in range(n):
             l.append(i & 0xff)
             i >>= 8
         return bytearray(l[::-1])
 
+    ## Encode binary out of hex string.
+    # @param h (str) hex string.
+    # @param sep (optional, str) octet separator.
+    # @returns (bytearray) data.
+    #
     @staticmethod
     def encode_binary_from_hexstring(h, sep=''):
-        """Encode binary out of hex string.
-
-        Arguments:
-            h (str): hex string.
-            sep (optional, str): octet separator.
-
-        Returns:
-            bytearray: data.
-        """
         return bytearray(
             int(x, 16) for x in re.findall('..', h.replace(sep, ''))
         )
 
 
+## Base for packet decoding/encoding.
+#
 class Packet(base.Base):
-    """Base for packet decoding/encoding."""
 
+    ## Constructor.
     def __init__(self):
         super(Packet, self).__init__()
 
+    ## String representation.
     def __repr__(self):
-        """Representation operator."""
         return ''
 
-    def encode(self):
-        """Encode as bytearray.
+    ## Equals operator.
+    # @param other (object) other object.
+    # @returns (bool) True if equals.
+    #
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return NotImplemented
+        return True
 
-        Raises:
-            RuntimeError: If packet is incomplete.
-        """
+    ## Encode as bytearray.
+    # @returns (bytearray) encoded packet.
+    # @throws RuntimeError If packet is incomplete.
+    #
+    def encode(self):
         return bytearray()
 
+    ## Decode buffer to packet.
+    # @param buf (bytearray: buffer to decode.
+    # @returns (@ref EthernetPacket) packet.
+    # @throws RuntimeError if buffer cannot buf parsed.
+    #
     @staticmethod
     def decode(buf):
-        """Decode buffer to packet.
-
-        Args:
-            buf (bytebuffer): buffer to decode.
-
-        Returns:
-            EthernetPacket: packet.
-
-        Raises:
-            RuntimeError: if buffer cannot b parsed.
-        """
         pass
 
 
+## Ethernet packet decoding/encoding.
+#
 class EthernetPacket(Packet):
-    """Ethernet packet decoding/encoding."""
 
+    ## Return string representation of a mac address.
+    # @param mac (bytearray) a mac.
+    # @param sep (optional, str) octet separator.
+    # @returns (str) String representation.
+    #
     @staticmethod
     def mac_to_string(mac, sep=':'):
-        """Return string representation of a mac address.
-
-        Args:
-            mac (bytearray): a mac.
-            sep (optional, str): octet separator.
-
-        Retruns:
-            str: String representation.
-        """
         return (
             None if mac is None
             else EncodeDecodeUtils.decode_binary_as_hexstring(
@@ -181,36 +154,34 @@ class EthernetPacket(Packet):
             )[0]
         )
 
+    ## Returns mac out of string representation.
+    # @param s (str) string.
+    # @param sep (optional, str) octet separator.
+    # @returns (bytearray) mac address.
+    #
     @staticmethod
     def mac_from_string(s, sep=':'):
-        """Returns mac out of string representation.
-
-        Args:
-            s (str): string.
-            sep (optional, str): octet separator.
-
-        Returns:
-            bytearray: mac address.
-        """
         return EncodeDecodeUtils.encode_binary_from_hexstring(s, sep)
 
+    ## Returns True if mac address is a multicast address
+    # @param mac (bytearray) mac address.
+    # @returns (bool) True if multicast address.
+    #
     @staticmethod
     def mac_is_multicast(mac):
-        """Returns True if mac address is a multicast address
-
-        Args:
-            mac (bytearray): mac address.
-
-        Returns:
-            bool: True if multicast address.
-        """
         return (mac[0] & 0x01) != 0
 
-    MAC_SIZE = 6
-    ETHERTYPE_SIZE = 2
-    MAX_SIZE = 1518
-    MAC_BROADCAST = bytearray((0xff,) * MAC_SIZE)
+    MAC_SIZE = 6            # MAC address size.
+    ETHERTYPE_SIZE = 2      # Ethernet type size.
+    MAX_SIZE = 1518         # Max packet size.
+    MAC_BROADCAST = bytearray((0xff,) * MAC_SIZE)   # Broadcase address.
 
+    ## Constructor.
+    # @param dst (bytearray) destination address.
+    # @param src (bytearray) source address.
+    # @param ethertype (int) ethertype.
+    # @param data (bytearray) payload.
+    #
     def __init__(
         self,
         dst=None,
@@ -218,20 +189,13 @@ class EthernetPacket(Packet):
         ethertype=None,
         data=None,
     ):
-        """Constructor.
-
-        Args:
-            dst (bytearray): destination address.
-            src (bytearray): source address.
-            ethertype (int): ethertype.
-            data (bytearray): payload.
-        """
         super(EthernetPacket, self).__init__()
         self.dst = dst
         self.src = src
         self.ethertype = ethertype
         self.data = None if data is None else bytearray(data)
 
+    ## @copydoc Packet#__eq__
     def __eq__(self, other):
         if type(self) is not type(other):
             return NotImplemented
@@ -243,6 +207,7 @@ class EthernetPacket(Packet):
             self.data == other.data,
         ))
 
+    ## @copydoc Packet#__repr__
     def __repr__(self):
         return (
             '{{'
@@ -271,6 +236,7 @@ class EthernetPacket(Packet):
             ),
         )
 
+    ## @copydoc Packet#encode
     def encode(self):
         if None in (
             self.dst,
@@ -311,6 +277,7 @@ class EthernetPacket(Packet):
 
         return encoded
 
+    ## @copydoc Packet#decode
     @staticmethod
     def decode(buf):
         packet = EthernetPacket()
@@ -347,35 +314,40 @@ class EthernetPacket(Packet):
         return packet
 
 
+## Registration packet decoder/encoder.
+#
 class RegistrationPacket(Packet):
-    """Registration packet decoder/encoder."""
 
-    ETHERTYPE = 0x1002
-    COMMAND_SIZE = 1
-    NAME_SIZE = 10
+    ETHERTYPE = 0x1002      ## Ethernet type for registration packet.
+    COMMAND_SIZE = 1        ## Command field size.
+    NAME_SIZE = 10          ## Name field size.
 
-    COMMAND_ALLOCATE = 0
-    COMMAND_RELEASE = 1
+    ## Commands
+    (
+        COMMAND_ALLOCATE,
+        COMMAND_RELEASE,
+    ) = range(2)
+
+    ## Command mapping
     COMMAND_DESC = {
         COMMAND_ALLOCATE: 'allocate',
         COMMAND_RELEASE: 'release',
     }
 
+    ## Constructor.
+    # @param command (int) registration command.
+    # @param name (str) announce name.
+    #
     def __init__(
         self,
         command=None,
         name=None,
     ):
-        """Constructor.
-
-        Args:
-            command (int): registration command.
-            name (str): annoynce name.
-        """
         super(RegistrationPacket, self).__init__()
         self.command = command
         self.name = name
 
+    ## @copydoc Packet#__eq__
     def __eq__(self, other):
         if type(self) is not type(other):
             return NotImplemented
@@ -385,6 +357,7 @@ class RegistrationPacket(Packet):
             self.name == other.name,
         ))
 
+    ## @copydoc Packet#__repr__
     def __repr__(self):
         return (
             '{{'
@@ -402,6 +375,7 @@ class RegistrationPacket(Packet):
             ),
         )
 
+    ## @copydoc Packet#encode
     def encode(self):
         if None in (
             self.command,
@@ -440,6 +414,7 @@ class RegistrationPacket(Packet):
             )
         )
 
+    ## @copydoc Packet#decode
     @staticmethod
     def decode(buf):
         packet = RegistrationPacket()
@@ -459,27 +434,27 @@ class RegistrationPacket(Packet):
         return packet
 
 
+## Chat packet decoder/encoder.
+#
 class ChatPacket(Packet):
-    """Chat packet decoder/encoder."""
 
-    ETHERTYPE = 0x1001
-    NAME_SIZE = 10
+    ETHERTYPE = 0x1001      ## Ethernet type for chat packet.
+    NAME_SIZE = 10          ## Name field length.
 
+    ## Constructor.
+    # @param name (str) chatter's name.
+    # @param message (str) message.
+    #
     def __init__(
         self,
         name=None,
         message=None,
     ):
-        """Constructor.
-
-        Args:
-            name (str): chatter's name.
-            message (str): message.
-        """
         super(ChatPacket, self).__init__()
         self.name = name
         self.message = message
 
+    ## @copydoc Packet#__eq__
     def __eq__(self, other):
         if type(self) is not type(other):
             return NotImplemented
@@ -489,6 +464,7 @@ class ChatPacket(Packet):
             self.message == other.message,
         ))
 
+    ## @copydoc Packet#__repr__
     def __repr__(self):
         return (
             '{{'
@@ -502,6 +478,7 @@ class ChatPacket(Packet):
             self=self,
         )
 
+    ## @copydoc Packet#encode
     def encode(self):
         if None in (self.name, self.message):
             raise RuntimeError('Incomplete chat packet')
@@ -515,6 +492,7 @@ class ChatPacket(Packet):
             EncodeDecodeUtils.encode_string(self.message)
         )
 
+    ## @copydoc Packet#decode
     @staticmethod
     def decode(buf):
         packet = ChatPacket()
