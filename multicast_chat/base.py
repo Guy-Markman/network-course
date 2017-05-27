@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 ## @package multicast_chat.base Base module.
+## @file base.py Implementation of @ref multicast_chat.base
 #
 
 

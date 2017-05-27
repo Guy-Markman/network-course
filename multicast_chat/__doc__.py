@@ -1,5 +1,6 @@
 #!/usr/bin/python
 ## @package multicast_chat.__doc__ Main documentation.
+## @file __doc__.py Implementation of @ref multicast_chat.__doc__
 #
 
 

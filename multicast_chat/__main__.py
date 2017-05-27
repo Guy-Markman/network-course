@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 ## @package multicast_chat.__main__
 # Multicast chat with impersonation prevention.
+## @file __main__.py Implementation of @ref multicast_chat.__main__
 #
 
 import argparse

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 ## @package multicast_chat.packets Packets encoding/decoding.
+## @file packets.py Implementation of @ref multicast_chat.packets
 #
 
 

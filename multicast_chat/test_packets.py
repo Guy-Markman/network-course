@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 ## @package multicast_chat.test_packets Unit tests for packets.
+## @file test_packets.py Implementation of @ref multicast_chat.test_packets
 #
 
 import unittest
